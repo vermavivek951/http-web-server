@@ -1,0 +1,34 @@
+# C++ HTTP Server Project Progress
+
+## TCP Socket Server
+- [*] Bind and listen
+- [*] Accept client
+- [ ] Read raw HTTP request
+- [ ] Send basic HTTP response
+
+## HTTP Parsing
+- [ ] Parse method and path
+- [ ] Extract headers
+- [ ] Handle malformed requests
+
+## Static File Serving
+- [ ] Read files
+- [ ] MIME type detection
+- [ ] Return 404 if missing
+
+## Routing
+- [ ] Map paths to handlers
+- [ ] Return JSON for `/api/...`
+
+## Multithreading
+- [ ] Handle concurrent clients
+- [ ] Clean up threads
+
+## Errors & Logging
+- [ ] Proper status codes
+- [ ] Add logging
+
+## Final Polish
+- [ ] Handle query params
+- [ ] Support POST (optional)
+- [ ] Refactor and document
