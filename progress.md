@@ -1,8 +1,8 @@
 # C++ HTTP Server Project Progress
 
 ## TCP Socket Server
-- [*] Bind and listen
-- [*] Accept client
+- [X] Bind and listen
+- [X] Accept client
 - [ ] Read raw HTTP request
 - [ ] Send basic HTTP response
 
