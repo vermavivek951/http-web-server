@@ -3,8 +3,8 @@
 ## TCP Socket Server
 - [X] Bind and listen
 - [X] Accept client
-- [ ] Read raw HTTP request
-- [ ] Send basic HTTP response
+- [X] Read raw HTTP request
+- [X] Send basic HTTP response
 
 ## HTTP Parsing
 - [ ] Parse method and path
