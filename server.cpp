@@ -46,23 +46,41 @@ int main() {
 
     std::cout << "Server listening on port 8080..." << "\n";
 
-    //Accept a client connection
-    sockaddr_in clientAddr{};
-    int clientSize = sizeof(clientAddr);
-    SOCKET clientSocket = accept(serverSocket , (sockaddr*)&clientAddr , &clientSize);
+    while(true) {
+        //Accept a client connection
+        sockaddr_in clientAddr{};
+        int clientSize = sizeof(clientAddr);
+        SOCKET clientSocket = accept(serverSocket , (sockaddr*)&clientAddr , &clientSize);
 
-    if(clientSocket == INVALID_SOCKET) {
-        std::cerr << "Accept failed. Error: " << WSAGetLastError() << "\n";
-        closesocket(serverSocket);
-        WSACleanup();
-        return 1;
+        if(clientSocket == INVALID_SOCKET) {
+            std::cerr << "Accept failed. Error: " << WSAGetLastError() << "\n";
+            continue;
+        }
+
+        std::cout << "Accepted a new connection." << "\n";
+
+        //Read a raw HTTP request
+        char buffer[1024];
+        int bytesReceived = recv(clientSocket , buffer , sizeof(buffer) -1 , 0);
+        if(bytesReceived > 0) {
+            buffer[bytesReceived] = '\0';
+            std::cout << "Request:\n" << buffer << "\n";
+
+            //Send a basic HTTP response
+            const char* httpResponse = 
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/plain\r\n"
+                "Content-Length: 11\r\n"
+                "\r\n"
+                "Hello World";
+
+            send(clientSocket , httpResponse , strlen(httpResponse) , 0);
+        }
+        closesocket(clientSocket);
     }
+    
 
-    std::cout << "Client connected!!!" << "\n";
 
-
-    //finally do the necessary cleanup
-    closesocket(clientSocket);
     closesocket(serverSocket);
     WSACleanup();
 
