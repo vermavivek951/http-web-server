@@ -2,6 +2,8 @@
 #include<winsock2.h> //provides socket APIs.
 #include<ws2tcpip.h> //provides some sort of extended functionality like inet_pton.
 
+#include "httprequest.cpp"
+
 int main() {
     std::cout << "running program\n";
     WSADATA wsaData;
@@ -64,7 +66,19 @@ int main() {
         int bytesReceived = recv(clientSocket , buffer , sizeof(buffer) -1 , 0);
         if(bytesReceived > 0) {
             buffer[bytesReceived] = '\0';
-            std::cout << "Request:\n" << buffer << "\n";
+            std::string rawRequest(buffer);
+            try {
+                HttpRequest req = parseHttpRequest(rawRequest);
+                std::cout << "Method: " << req.method << "\n";
+                std::cout << "Path: " << req.path << "\n";
+                std::cout << "Version: " << req.version << "\n";
+
+                for(const auto& [key , value] : req.headers) {
+                    std::cout << key << ": " << value << "\n";
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Invalid request: " << e.what() << "\n";
+            }
 
             //Send a basic HTTP response
             const char* httpResponse = 

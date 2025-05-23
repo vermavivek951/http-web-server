@@ -7,9 +7,9 @@
 - [X] Send basic HTTP response
 
 ## HTTP Parsing
-- [ ] Parse method and path
-- [ ] Extract headers
-- [ ] Handle malformed requests
+- [X] Parse method and path
+- [X] Extract headers
+- [X] Handle malformed requests
 
 ## Static File Serving
 - [ ] Read files
