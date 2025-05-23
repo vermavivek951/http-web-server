@@ -12,9 +12,9 @@
 - [X] Handle malformed requests
 
 ## Static File Serving
-- [ ] Read files
-- [ ] MIME type detection
-- [ ] Return 404 if missing
+- [X] Read files
+- [X] MIME type detection
+- [X] Return 404 if missing
 
 ## Routing
 - [ ] Map paths to handlers

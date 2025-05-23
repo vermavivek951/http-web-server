@@ -1,8 +1,37 @@
 #include<iostream>
 #include<winsock2.h> //provides socket APIs.
 #include<ws2tcpip.h> //provides some sort of extended functionality like inet_pton.
+#include<fstream>
+#include<filesystem>
 
 #include "httprequest.cpp"
+
+namespace fs = std::filesystem;
+
+//helper function
+bool endsWith(const std::string& str , const std::string& suffix) {
+    if(suffix.size() > str.size()) return false;
+    return std::equal(suffix.rbegin() , suffix.rend() , str.rbegin());
+}
+
+std::string getMimeType(const std::string& path) {
+    if(endsWith(path, ".html")) return "text/html";
+    if(endsWith(path, ".css")) return "text/css";
+    if(endsWith(path, ".js")) return "application/javascript";
+    if(endsWith(path, ".png")) return "image/png";
+    if(endsWith(path, ".jpg") || endsWith(path , ".jped")) return "image/jpeg";
+
+    return "text/plain";
+}
+
+std::string readFileContent(const std::string& filePath) {
+    std::ifstream file(filePath , std::ios::binary);
+    if(!file) return "";
+
+    std::ostringstream ss;
+    ss << file.rdbuf();
+    return ss.str();
+}
 
 int main() {
     std::cout << "running program\n";
@@ -67,36 +96,60 @@ int main() {
         if(bytesReceived > 0) {
             buffer[bytesReceived] = '\0';
             std::string rawRequest(buffer);
+
             try {
                 HttpRequest req = parseHttpRequest(rawRequest);
-                std::cout << "Method: " << req.method << "\n";
-                std::cout << "Path: " << req.path << "\n";
-                std::cout << "Version: " << req.version << "\n";
+                std::string filePath = "." + req.path;
 
-                for(const auto& [key , value] : req.headers) {
-                    std::cout << key << ": " << value << "\n";
+                if(req.path == "/") {
+                    filePath = "./index.html";
                 }
+
+                if(fs::exists(filePath) && fs::is_regular_file(filePath)) {
+                    std::string content = readFileContent(filePath);
+                    std::string contentType = getMimeType(filePath);
+
+
+                    std::ostringstream response;
+                    response << "HTTP/1.1 200 OK\r\n"
+                             << "Content-Type: " << contentType << "\r\n"
+                             << "Content-Length: " << content.size() << "\r\n"
+                             << "\r\n"
+                             << content;
+
+                    
+
+                    std::string fullResponse = response.str();
+                    send(clientSocket , fullResponse.c_str() , fullResponse.size() , 0);
+                }
+                else {
+                    const char* notFound =
+                        "HTTP/1.1 404 Not Found\r\n"
+                        "Content-Type: text/plain\r\n"
+                        "Content-Length: 13\r\n"
+                        "\r\n"
+                        "404 Not Found";
+                    send(clientSocket, notFound, strlen(notFound), 0);
+                }
+                
             } catch (const std::exception& e) {
                 std::cerr << "Invalid request: " << e.what() << "\n";
+                const char* badRequest =
+                    "HTTP/1.1 400 Bad Request\r\n"
+                    "Content-Type: text/plain\r\n"
+                    "Content-Length: 12\r\n"
+                    "\r\n"
+                    "Bad Request";
+                send(clientSocket , badRequest , strlen(badRequest) , 0);
             }
-
-            //Send a basic HTTP response
-            const char* httpResponse = 
-                "HTTP/1.1 200 OK\r\n"
-                "Content-Type: text/plain\r\n"
-                "Content-Length: 11\r\n"
-                "\r\n"
-                "Hello World";
-
-            send(clientSocket , httpResponse , strlen(httpResponse) , 0);
         }
         closesocket(clientSocket);
     }
     
-
-
     closesocket(serverSocket);
     WSACleanup();
 
     return 0;
 }
+
+

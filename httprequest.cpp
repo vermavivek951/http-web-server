@@ -43,7 +43,5 @@ HttpRequest parseHttpRequest(const std::string& rawRequest) {
             request.headers[key] = value;
         }
     }
-
-
     return request;
 }
