@@ -25,8 +25,8 @@
 - [X] Clean up threads
 
 ## Errors & Logging
-- [ ] Proper status codes
-- [ ] Add logging
+- [X] Proper status codes
+- [X] Add logging
 
 ## Final Polish
 - [ ] Handle query params
