@@ -6,3 +6,7 @@ A minimal HTTP server written from scratch in modern C++. It supports:
 * Route-based API endpoints
 * Multithreading (std::thread)
 * Logging and error handling
+
+
+To-run:
+* use `build.bat` and `clean.bat`.

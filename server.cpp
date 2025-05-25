@@ -1,3 +1,4 @@
+
 #include<iostream>
 #include<winsock2.h> //provides socket APIs.
 #include<ws2tcpip.h> //provides some sort of extended functionality like inet_pton.
@@ -83,7 +84,6 @@ void handleClient(SOCKET clientSocket , sockaddr_in clientAddr , const std::map<
         else {
             //serving static file;
             std::string filePath = "." + req.path;
-            std::cout << "filePath: " << filePath << "\n";
             if(req.path == "/") {
                 filePath = "./index.html";
             }
@@ -114,7 +114,7 @@ void handleClient(SOCKET clientSocket , sockaddr_in clientAddr , const std::map<
 }
 
 
-int main() {
+int startServer(int port) {
     WSADATA wsaData;
     SOCKET serverSocket;
 
