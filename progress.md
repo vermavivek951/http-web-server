@@ -17,8 +17,8 @@
 - [X] Return 404 if missing
 
 ## Routing
-- [ ] Map paths to handlers
-- [ ] Return JSON for `/api/...`
+- [X] Map paths to handlers
+- [X] Return JSON for `/api/...`
 
 ## Multithreading
 - [ ] Handle concurrent clients
