@@ -5,6 +5,7 @@
 #include<filesystem>
 
 #include "httprequest.cpp"
+#include "routes.hpp"
 
 namespace fs = std::filesystem;
 
@@ -14,12 +15,17 @@ bool endsWith(const std::string& str , const std::string& suffix) {
     return std::equal(suffix.rbegin() , suffix.rend() , str.rbegin());
 }
 
+bool startsWith(const std::string &str , const std::string &prefix) {
+    if(prefix.size() > str.size()) return false;
+    return str.compare(0 , prefix.size() , prefix) == 0;
+}
+
 std::string getMimeType(const std::string& path) {
     if(endsWith(path, ".html")) return "text/html";
     if(endsWith(path, ".css")) return "text/css";
     if(endsWith(path, ".js")) return "application/javascript";
     if(endsWith(path, ".png")) return "image/png";
-    if(endsWith(path, ".jpg") || endsWith(path , ".jped")) return "image/jpeg";
+    if(endsWith(path, ".jpg") || endsWith(path , ".jpeg")) return "image/jpeg";
 
     return "text/plain";
 }
@@ -77,6 +83,8 @@ int main() {
 
     std::cout << "Server listening on port 8080..." << "\n";
 
+    auto routes = createRoutes();
+
     while(true) {
         //Accept a client connection
         sockaddr_in clientAddr{};
@@ -99,39 +107,66 @@ int main() {
 
             try {
                 HttpRequest req = parseHttpRequest(rawRequest);
-                std::string filePath = "." + req.path;
-
-                if(req.path == "/") {
-                    filePath = "./index.html";
-                }
-
-                if(fs::exists(filePath) && fs::is_regular_file(filePath)) {
-                    std::string content = readFileContent(filePath);
-                    std::string contentType = getMimeType(filePath);
-
-
-                    std::ostringstream response;
-                    response << "HTTP/1.1 200 OK\r\n"
-                             << "Content-Type: " << contentType << "\r\n"
-                             << "Content-Length: " << content.size() << "\r\n"
-                             << "\r\n"
-                             << content;
-
-                    
-
-                    std::string fullResponse = response.str();
-                    send(clientSocket , fullResponse.c_str() , fullResponse.size() , 0);
+                
+                std::cout << "req.path: " << req.path << "\n";
+                if(startsWith(req.path , "/api/")) {
+                    if(routes.find(req.path)!= routes.end()) {
+                        std::string json = routes[req.path](req);
+                        std::string response = 
+                         "HTTP/1.1 200 OK\r\n"
+                         "Content-Type: application/json\r\n"
+                         "Content-Length: " + std::to_string(json.size()) + "\r\n"
+                         "\r\n" + json;
+                         
+                        send(clientSocket , response.c_str(), response.size() , 0);
+                    }
+                    else {
+                        std::string notFound = R"({"error":"Not Found"})";
+                        std::string response = 
+                            "HTTP/1.1 404 Not Found\r\n"
+                            "Content-Type: application/json\r\n"
+                            "Content-Length: " + std::to_string(notFound.size()) + "\r\n"
+                            "\r\n" + notFound;
+                        
+                        send(clientSocket , response.c_str() , response.size() , 0);
+                    }
                 }
                 else {
-                    const char* notFound =
-                        "HTTP/1.1 404 Not Found\r\n"
-                        "Content-Type: text/plain\r\n"
-                        "Content-Length: 13\r\n"
-                        "\r\n"
-                        "404 Not Found";
-                    send(clientSocket, notFound, strlen(notFound), 0);
-                }
+                    //serving static file;
+                    std::string filePath = "." + req.path;
+                    std::cout << "filePath: " << filePath << "\n";
+                    if(req.path == "/") {
+                        filePath = "./index.html";
+                    }
+
+                    if(fs::exists(filePath) && fs::is_regular_file(filePath)) {
+                        std::string content = readFileContent(filePath);
+                        std::string contentType = getMimeType(filePath);
+
+
+                        std::ostringstream response;
+                        response << "HTTP/1.1 200 OK\r\n"
+                                << "Content-Type: " << contentType << "\r\n"
+                                << "Content-Length: " << content.size() << "\r\n"
+                                << "\r\n"
+                                << content;
+
+                        
+
+                        std::string fullResponse = response.str();
+                        send(clientSocket , fullResponse.c_str() , fullResponse.size() , 0);
+                    }
+                    else {
+                        const char* notFound =
+                            "HTTP/1.1 404 Not Found\r\n"
+                            "Content-Type: text/plain\r\n"
+                            "Content-Length: 13\r\n"
+                            "\r\n"
+                            "404 Not Found";
+                        send(clientSocket, notFound, strlen(notFound), 0);
+                    }
                 
+                }
             } catch (const std::exception& e) {
                 std::cerr << "Invalid request: " << e.what() << "\n";
                 const char* badRequest =

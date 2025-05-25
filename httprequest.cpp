@@ -1,3 +1,4 @@
+#pragma once
 #include<string>
 #include<map>
 #include <stdexcept>
@@ -10,7 +11,7 @@ struct HttpRequest {
     std::map<std::string, std::string> headers;
 };
 
-
+ 
 HttpRequest parseHttpRequest(const std::string& rawRequest) {
     HttpRequest request;
     std::istringstream stream(rawRequest);
