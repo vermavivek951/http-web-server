@@ -21,8 +21,8 @@
 - [X] Return JSON for `/api/...`
 
 ## Multithreading
-- [ ] Handle concurrent clients
-- [ ] Clean up threads
+- [X] Handle concurrent clients
+- [X] Clean up threads
 
 ## Errors & Logging
 - [ ] Proper status codes
