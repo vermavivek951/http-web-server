@@ -44,83 +44,57 @@ std::string readFileContent(const std::string& filePath) {
 void handleClient(SOCKET clientSocket , const std::map<std::string, std::function<std::string(const HttpRequest&)>>& routes) {
     char buffer[1024];
     int bytesReceived = recv(clientSocket , buffer , sizeof(buffer) -1 , 0);
-    if(bytesReceived > 0) {
-        buffer[bytesReceived] = '\0';
-        std::string rawRequest(buffer);
 
-        try {
-            HttpRequest req = parseHttpRequest(rawRequest);
-            
-            std::cout << "req.path: " << req.path << "\n";
-            if(startsWith(req.path , "/api/")) {
-                if(routes.find(req.path)!= routes.end()) {
-                    std::string json = routes.at(req.path)(req);
-                    std::string response = 
-                    "HTTP/1.1 200 OK\r\n"
-                    "Content-Type: application/json\r\n"
-                    "Content-Length: " + std::to_string(json.size()) + "\r\n"
-                    "\r\n" + json;
-                    
-                    send(clientSocket , response.c_str(), response.size() , 0);
-                }
-                else {
-                    std::string notFound = R"({"error":"Not Found"})";
-                    std::string response = 
-                        "HTTP/1.1 404 Not Found\r\n"
-                        "Content-Type: application/json\r\n"
-                        "Content-Length: " + std::to_string(notFound.size()) + "\r\n"
-                        "\r\n" + notFound;
-                    
-                    send(clientSocket , response.c_str() , response.size() , 0);
-                }
+    if(bytesReceived <= 0) {
+        closesocket(clientSocket);
+        return;
+    }
+
+    buffer[bytesReceived] = '\0';
+    std::string rawRequest(buffer);
+
+    std::string response;
+
+    try {
+        HttpRequest req = parseHttpRequest(rawRequest);
+        
+        std::cout << "req.path: " << req.path << "\n";
+
+        if(startsWith(req.path , "/api/")) {
+            if(routes.find(req.path)!= routes.end()) {
+                std::string body = routes.at(req.path)(req);
+                response = makeHttpResponse("200 OK" , "application/json" , body);
             }
             else {
-                //serving static file;
-                std::string filePath = "." + req.path;
-                std::cout << "filePath: " << filePath << "\n";
-                if(req.path == "/") {
-                    filePath = "./index.html";
-                }
-
-                if(fs::exists(filePath) && fs::is_regular_file(filePath)) {
-                    std::string content = readFileContent(filePath);
-                    std::string contentType = getMimeType(filePath);
-
-
-                    std::ostringstream response;
-                    response << "HTTP/1.1 200 OK\r\n"
-                            << "Content-Type: " << contentType << "\r\n"
-                            << "Content-Length: " << content.size() << "\r\n"
-                            << "\r\n"
-                            << content;
-
-                    
-
-                    std::string fullResponse = response.str();
-                    send(clientSocket , fullResponse.c_str() , fullResponse.size() , 0);
-                }
-                else {
-                    const char* notFound =
-                        "HTTP/1.1 404 Not Found\r\n"
-                        "Content-Type: text/plain\r\n"
-                        "Content-Length: 13\r\n"
-                        "\r\n"
-                        "404 Not Found";
-                    send(clientSocket, notFound, strlen(notFound), 0);
-                }
-            
+                std::string notFound = R"({"error":"Not Found"})";
+                response = makeHttpResponse("404 Not Found" , "application/json" , notFound);
             }
-        } catch (const std::exception& e) {
-            std::cerr << "Invalid request: " << e.what() << "\n";
-            const char* badRequest =
-                "HTTP/1.1 400 Bad Request\r\n"
-                "Content-Type: text/plain\r\n"
-                "Content-Length: 12\r\n"
-                "\r\n"
-                "Bad Request";
-            send(clientSocket , badRequest , strlen(badRequest) , 0);
         }
+        else {
+            //serving static file;
+            std::string filePath = "." + req.path;
+            std::cout << "filePath: " << filePath << "\n";
+            if(req.path == "/") {
+                filePath = "./index.html";
+            }
+
+            if(fs::exists(filePath) && fs::is_regular_file(filePath)) {
+                std::string content = readFileContent(filePath);
+                std::string contentType = getMimeType(filePath);
+
+                response = makeHttpResponse("200 OK" , contentType , content);
+            }
+            else {
+                response = makeHttpResponse("404 Not Found" , "text/plain" , "404 Not Found");
+            }
+        
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Invalid request: " << e.what() << "\n";        
+        response = makeHttpResponse("404 Bad Request" , "text/plain" , "Bad Request");
     }
+
+    send(clientSocket , response.c_str() , response.size() , 0);
     closesocket(clientSocket);
 }
 

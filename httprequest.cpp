@@ -46,3 +46,15 @@ HttpRequest parseHttpRequest(const std::string& rawRequest) {
     }
     return request;
 }
+
+
+std::string makeHttpResponse(const std::string& status , const std::string& contentType , const std::string& body) {
+    std::ostringstream response;
+    response << "HTTP/1.1 " << status << "\r\n"
+             << "Content-Length: " << body.size() << "\r\n"
+             << "Content-Type: " << contentType << "\r\n"
+             << "\r\n"
+             << body;
+
+    return response.str();
+}
