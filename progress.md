@@ -30,5 +30,5 @@
 
 ## Final Polish
 - [ ] Handle query params
-- [ ] Support POST (optional)
+- [ ] Support POST  (optional)
 - [ ] Refactor and document
