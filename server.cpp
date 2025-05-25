@@ -11,6 +11,10 @@
 namespace fs = std::filesystem;
 
 //helper function
+void logRequest(const std::string& ip , const std::string& path , const std::string& status) {
+    std::cout << "[LOG] IP: " << ip << " | Path: " << path << " | Status: " << status << "\n";
+}
+
 bool endsWith(const std::string& str , const std::string& suffix) {
     if(suffix.size() > str.size()) return false;
     return std::equal(suffix.rbegin() , suffix.rend() , str.rbegin());
@@ -41,7 +45,7 @@ std::string readFileContent(const std::string& filePath) {
 }
 
 
-void handleClient(SOCKET clientSocket , const std::map<std::string, std::function<std::string(const HttpRequest&)>>& routes) {
+void handleClient(SOCKET clientSocket , sockaddr_in clientAddr , const std::map<std::string, std::function<std::string(const HttpRequest&)>>& routes) {
     char buffer[1024];
     int bytesReceived = recv(clientSocket , buffer , sizeof(buffer) -1 , 0);
 
@@ -54,20 +58,26 @@ void handleClient(SOCKET clientSocket , const std::map<std::string, std::functio
     std::string rawRequest(buffer);
 
     std::string response;
+    std::string statusCode = "500";
+    std::string requestPath = "N/A";
 
     try {
         HttpRequest req = parseHttpRequest(rawRequest);
-        
-        std::cout << "req.path: " << req.path << "\n";
+        requestPath = req.path;
+
+        char clientIP[INET_ADDRSTRLEN] = "unknown";
+        inet_ntop(AF_INET , &(clientAddr.sin_addr) , clientIP , INET_ADDRSTRLEN);
 
         if(startsWith(req.path , "/api/")) {
             if(routes.find(req.path)!= routes.end()) {
                 std::string body = routes.at(req.path)(req);
                 response = makeHttpResponse("200 OK" , "application/json" , body);
+                statusCode = "200";
             }
             else {
                 std::string notFound = R"({"error":"Not Found"})";
                 response = makeHttpResponse("404 Not Found" , "application/json" , notFound);
+                statusCode = "404";
             }
         }
         else {
@@ -83,15 +93,20 @@ void handleClient(SOCKET clientSocket , const std::map<std::string, std::functio
                 std::string contentType = getMimeType(filePath);
 
                 response = makeHttpResponse("200 OK" , contentType , content);
+                statusCode = "200";
             }
             else {
                 response = makeHttpResponse("404 Not Found" , "text/plain" , "404 Not Found");
+                statusCode = "404";
             }
-        
         }
+
+        logRequest(clientIP , req.path , statusCode);
+
     } catch (const std::exception& e) {
-        std::cerr << "Invalid request: " << e.what() << "\n";        
+        // std::cerr << "Invalid request: " << e.what() << "\n";        
         response = makeHttpResponse("404 Bad Request" , "text/plain" , "Bad Request");
+        logRequest("unknown" , requestPath , "400");
     }
 
     send(clientSocket , response.c_str() , response.size() , 0);
@@ -100,7 +115,6 @@ void handleClient(SOCKET clientSocket , const std::map<std::string, std::functio
 
 
 int main() {
-    std::cout << "running program\n";
     WSADATA wsaData;
     SOCKET serverSocket;
 
@@ -156,10 +170,8 @@ int main() {
             continue;
         }
 
-        std::cout << "Accepted a new connection." << "\n";
-
         //Read a raw HTTP request
-        std::thread clientThread(handleClient , clientSocket , std::cref(routes));
+        std::thread clientThread(handleClient , clientSocket , clientAddr , std::cref(routes));
         clientThread.detach();
     }
     
