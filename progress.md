@@ -43,9 +43,9 @@ _____________________________________________________
 
 
 ## RESTful POST + JSON Body Parsing
-- [ ] Accept POST requests
-- [ ] Parse request body and Content-Length
-- [ ] Parse JSON (manually or with nlohmann/json)
+- [X] Accept POST requests
+- [X] Parse request body
+- [X] Parse JSON manually
 
 ## Response Compression (gzip)
 - [ ] Use zlib to compress static file responses

@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <map>
 
 
 //helper function
@@ -38,4 +39,30 @@ std::string readFileContent(const std::string& filePath) {
     std::ostringstream ss;
     ss << file.rdbuf();
     return ss.str();
+}
+
+std::map<std::string , std::string> parseJson(const std:: string& json) {
+    std::map<std::string , std::string> result;
+    std::string trimmed = json;
+
+    trimmed.erase(remove(trimmed.begin() , trimmed.end() , '{') , trimmed.end());
+    trimmed.erase(remove(trimmed.begin() , trimmed.end() , '}') , trimmed.end());
+
+    std::stringstream ss(trimmed);
+    std::string pair;
+
+    while(getline(ss , pair , ',')) {
+        size_t colon = pair.find(':');
+        if(colon != std::string::npos) {
+            std::string key = pair.substr(0 , colon);
+            std::string value = pair.substr(colon + 1);
+
+            key.erase(remove(key.begin() , key.end() , '\"') , key.end());
+            value.erase(remove(value.begin() , value.end() , '\"') , value.end());
+
+            result[key] = value;
+        }
+    }
+
+    return result;
 }

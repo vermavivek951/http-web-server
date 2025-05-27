@@ -3,12 +3,14 @@
 #include<map>
 #include <stdexcept>
 #include <sstream>
+#include <iostream>
 
 struct HttpRequest {
     std::string method;
     std::string path;
     std::string version;
     std::map<std::string, std::string> headers;
+    std::string body;
 };
 
  
@@ -16,7 +18,6 @@ HttpRequest parseHttpRequest(const std::string& rawRequest) {
     HttpRequest request;
     std::istringstream stream(rawRequest);
     std::string line;
-
 
     if(!std::getline(stream , line) || line.empty()) {
         throw std::runtime_error("Malformed request: Empty request line");
@@ -43,6 +44,10 @@ HttpRequest parseHttpRequest(const std::string& rawRequest) {
 
             request.headers[key] = value;
         }
+    }
+
+    while(std::getline(stream , line)) {
+        request.body+=line;
     }
     return request;
 }

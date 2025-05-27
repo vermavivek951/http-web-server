@@ -11,6 +11,22 @@
 
 namespace fs = std::filesystem;
 
+std::string handlePostEcho(const std::string& requestBody) {
+    auto jsonMap = parseJson(requestBody);
+
+    std::stringstream ss;
+    ss << "{";
+    for(auto it = jsonMap.begin(); it != jsonMap.end(); ++it) {
+        ss << "\"" << it->first << "\": \"" << it->second << "\"";
+        if(std::next(it) != jsonMap.end()) {
+            ss << ", ";
+        }
+    }
+    ss << "}";
+
+    return ss.str();
+}
+
 void handleClient(SOCKET clientSocket , sockaddr_in clientAddr , const std::map<std::string, std::function<std::string(const HttpRequest&)>>& routes) {
     char buffer[1024];
     int bytesReceived = recv(clientSocket , buffer , sizeof(buffer) -1 , 0);
@@ -34,9 +50,10 @@ void handleClient(SOCKET clientSocket , sockaddr_in clientAddr , const std::map<
         char clientIP[INET_ADDRSTRLEN] = "unknown";
         inet_ntop(AF_INET , &(clientAddr.sin_addr) , clientIP , INET_ADDRSTRLEN);
 
-        if(startsWith(req.path , "/api/")) {
-            if(routes.find(req.path)!= routes.end()) {
-                std::string body = routes.at(req.path)(req);
+
+        if(req.method == "POST") {
+            if(startsWith(req.path , "/api/echo")) {
+                std::string body = handlePostEcho(req.body);
                 response = makeHttpResponse("200 OK" , "application/json" , body);
                 statusCode = "200";
             }
@@ -46,28 +63,44 @@ void handleClient(SOCKET clientSocket , sockaddr_in clientAddr , const std::map<
                 statusCode = "404";
             }
         }
-        else {
-            //serving static file;
-            std::string filePath = "." + req.path;
-            if(req.path == "/") {
-                filePath = "./index.html";
-            }
+        else if(req.method == "GET") {
+            if(startsWith(req.path , "/api/")) {
+                if(routes.find(req.path)!= routes.end()) {
+                    std::string body = routes.at(req.path)(req);
+                    response = makeHttpResponse("200 OK" , "application/json" , body);
+                    statusCode = "200";
+                }
+                else {
+                    std::string notFound = R"({"error":"Not Found"})";
+                    response = makeHttpResponse("404 Not Found" , "application/json" , notFound);
+                    statusCode = "404";
+                }
 
-            if(fs::exists(filePath) && fs::is_regular_file(filePath)) {
-                std::string content = readFileContent(filePath);
-                std::string contentType = getMimeType(filePath);
-
-                response = makeHttpResponse("200 OK" , contentType , content);
-                statusCode = "200";
+                logRequest(clientIP , req.path , statusCode);
             }
             else {
-                response = makeHttpResponse("404 Not Found" , "text/plain" , "404 Not Found");
-                statusCode = "404";
+                //serving static file;
+                std::string filePath = "." + req.path;
+                if(req.path == "/") {
+                    filePath = "./index.html";
+                }
+
+                if(fs::exists(filePath) && fs::is_regular_file(filePath)) {
+                    std::string content = readFileContent(filePath);
+                    std::string contentType = getMimeType(filePath);
+
+                    response = makeHttpResponse("200 OK" , contentType , content);
+                    statusCode = "200";
+                }
+                else {
+                    response = makeHttpResponse("404 Not Found" , "text/plain" , "404 Not Found");
+                    statusCode = "404";
+                }
             }
+
+            logRequest(clientIP , req.path , statusCode);
+
         }
-
-        logRequest(clientIP , req.path , statusCode);
-
     } catch (const std::exception& e) {
         // std::cerr << "Invalid request: " << e.what() << "\n";        
         response = makeHttpResponse("404 Bad Request" , "text/plain" , "Bad Request");
