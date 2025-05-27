@@ -30,7 +30,6 @@
 
 ## Final Polish
 - [ ] Handle query params
-- [ ] Support POST  (optional)
 - [ ] Refactor and document
 
 
@@ -39,13 +38,9 @@ _____________________________________________________
 
 
 
-## Clean Architecture & Config File
-- [ ] Split code into modules: server, router, http, logger, utils
-- [ ] Use a .conf or .json file to define:
-    * Port number
-    * Root directory for static files
-    * Log file path
-- [ ] Add a config parser
+## Clean Architecture
+- [X] Split code into modules: server, router, http, utils
+
 
 ## RESTful POST + JSON Body Parsing
 - [ ] Accept POST requests
@@ -59,7 +54,7 @@ _____________________________________________________
 
 ## Basic TLS Support (HTTPS)
 - [ ] Use OpenSSL or wolfSSL to support HTTPS
-- [ ] Serve via https://localhost:4433
+- [ ] Serve via `https://localhost:4433`
 
 ## Caching Headers & ETag
 - [ ] Set Cache-Control, Expires, Last-Modified, ETag headers
